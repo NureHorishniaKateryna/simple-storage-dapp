@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>SimpleStorage Integration</title>
+  <script src="https://cdn.jsdelivr.net/npm/ethers@6.10.0/dist/ethers.umd.min.js"></script>
+
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      background: #f3f4f6;
+      color: #111827;
+    }
+
+    .wrap {
+      max-width: 920px;
+      margin: 32px auto;
+      padding: 0 16px;
+    }
+
+    .card {
+      background: #fff;
+      border-radius: 14px;
+      box-shadow: 0 10px 28px rgba(0,0,0,.08);
+      overflow: hidden;
+    }
+
+    .header {
+      padding: 18px 22px;
+      border-bottom: 1px solid #e5e7eb;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 14px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 18px;
+      font-weight: 700;
+    }
+
+    .subtitle {
+      font-size: 13px;
+      color: #6b7280;
+      margin-top: 4px;
+    }
+
+    .badge {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 10px;
+      border-radius: 999px;
+      border: 1px solid #e5e7eb;
+      background: #f9fafb;
+      font-size: 13px;
+    }
+
+    .dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: #9ca3af;
+    }
+    .dot.ok { background: #16a34a; }
+    .dot.warn { background: #f59e0b; }
+    .dot.err { background: #dc2626; }
+
+    .content {
+      padding: 22px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 18px;
+    }
+
+    @media (max-width: 860px) {
+      .content { grid-template-columns: 1fr; }
+    }
+
+    .panel {
+      border: 1px solid #e5e7eb;
+      border-radius: 12px;
+      padding: 16px;
+      background: #ffffff;
+    }
+
+    h2 {
+      margin: 0 0 12px;
+      font-size: 14px;
+      font-weight: 700;
+    }
+
+    label {
+      font-size: 12px;
+      color: #6b7280;
+      margin-bottom: 6px;
+      display: block;
+    }
+
+    input {
+      width: 100%;
+      padding: 11px 12px;
+      border-radius: 10px;
+      border: 1px solid #e5e7eb;
+      font-size: 14px;
+    }
+
+    .btns {
+      display: flex;
+      gap: 10px;
+      margin-top: 12px;
+      flex-wrap: wrap;
+    }
+
+    button {
+      padding: 10px 14px;
+      border-radius: 10px;
+      border: none;
+      font-weight: 600;
+      font-size: 13px;
+      cursor: pointer;
+    }
+
+    .btn-primary { background: #2563eb; color: #fff; }
+    .btn-ghost { background: #eef2ff; color: #1e40af; }
+
+    .kv {
+      margin-top: 12px;
+      display: grid;
+      gap: 10px;
+    }
+
+    .item {
+      padding: 10px 12px;
+      border-radius: 10px;
+      background: #f9fafb;
+      border: 1px solid #e5e7eb;
+    }
+
+    .k {
+      font-size: 12px;
+      color: #6b7280;
+    }
+
+    .v {
+      font-size: 13px;
+      word-break: break-all;
+    }
+
+    .hint {
+      margin-top: 10px;
+      font-size: 12px;
+      color: #6b7280;
+    }
+  </style>
+</head>
+
+<body>
+<div class="wrap">
+  <div class="card">
+
+    <div class="header">
+      <div>
+        <h1>SimpleStorage – інтеграція</h1>
+        <div class="subtitle">MetaMask + ethers.js (Sepolia)</div>
+      </div>
+      <div class="badge">
+        <span id="dot" class="dot"></span>
+        <span id="statusText">Не підключено</span>
+      </div>
+    </div>
+
+    <div class="content">
+      <div class="panel">
+        <h2>1) Підключення</h2>
+
+        <label>Адреса контракту</label>
+        <input id="contractAddress" placeholder="0x7C05Ac234ab6cdD1eb10E0De47f8a061f7479691" />
+
+        <div class="btns">
+          <button class="btn-primary" onclick="connect()">Connect MetaMask</button>
+          <button class="btn-ghost" id="btnLoad" onclick="loadContract()" disabled>Load Contract</button>
+        </div>
+
+        <div class="kv">
+          <div class="item">
+            <div class="k">Мережа</div>
+            <div class="v" id="network">—</div>
+          </div>
+          <div class="item">
+            <div class="k">Акаунт</div>
+            <div class="v" id="account">—</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h2>2) Робота з даними</h2>
+
+        <label>Нотатка</label>
+        <input id="note" placeholder="my first note" />
+
+        <div class="btns">
+          <button class="btn-primary" id="btnSet" onclick="setNote()" disabled>Save Note</button>
+          <button class="btn-ghost" id="btnGet" onclick="getNote()" disabled>Get My Note</button>
+        </div>
+
+        <div class="kv">
+          <div class="item">
+            <div class="k">Результат</div>
+            <div class="v" id="result">—</div>
+          </div>
+        </div>
+
+        <div class="hint">
+          Save Note — транзакція через MetaMask. Get My Note — читання без комісії.
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+  let provider, signer, contract;
+
+  const abi = [
+    "function setMyNote(string note)",
+    "function getMyNote() view returns (string)"
+  ];
+
+  function setStatus(type, text) {
+    document.getElementById("dot").className = "dot " + (type || "");
+    document.getElementById("statusText").innerText = text;
+  }
+
+  async function connect() {
+    if (!window.ethereum) return alert("MetaMask not found");
+
+    setStatus("warn", "Підключення...");
+    await ethereum.request({ method: "eth_requestAccounts" });
+
+    provider = new ethers.BrowserProvider(window.ethereum);
+    signer = await provider.getSigner();
+
+    document.getElementById("account").innerText = await signer.getAddress();
+    const net = await provider.getNetwork();
+    document.getElementById("network").innerText = `${net.name} (${net.chainId})`;
+
+    document.getElementById("btnLoad").disabled = false;
+    setStatus("ok", "MetaMask підключено");
+  }
+
+  async function loadContract() {
+    const address = document.getElementById("contractAddress").value.trim();
+    if (!address.startsWith("0x")) return alert("Невірна адреса");
+
+    contract = new ethers.Contract(address, abi, signer);
+    document.getElementById("btnSet").disabled = false;
+    document.getElementById("btnGet").disabled = false;
+    setStatus("ok", "Контракт завантажено");
+  }
+
+  async function setNote() {
+    const text = document.getElementById("note").value;
+    const tx = await contract.setMyNote(text);
+    await tx.wait();
+    alert("Нотатку збережено у блокчейні");
+  }
+
+  async function getNote() {
+    document.getElementById("result").innerText = await contract.getMyNote();
+  }
+</script>
+</body>
+</html>
+
